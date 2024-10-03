@@ -8,8 +8,18 @@ contract Whitelist {
     event Authorized( address _address);
     event EthReceived( address _addr, uint _value);
 
-    function authorize( address _address) public {
+    constructor() {
+        whitelist[ msg.sender] = true;
+    }
+
+    modifier check() {
+        require( whitelist[msg.sender] == true, "you are not authorized");
+        _;
+    }
+
+    function authorize( address _address) public check {
         whitelist[ _address] = true;
         emit Authorized( _address);
     }
+
 }
