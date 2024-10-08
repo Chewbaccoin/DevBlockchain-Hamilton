@@ -160,4 +160,45 @@ contract Voting is Ownable {
         require( voters[_voter].hasVoted, unicode"[Erreur] - Cette adresse n'a pas voté.");
         return voters[_voter].votedProposalId;
     }
+
+
+    // BONUS : Ajouts VotingPlus.sol
+    // Fonction pour récupérer le nombre total de propositions
+    function getProposalsCount() external view returns ( uint256) {
+        return proposals.length;
+    }
+
+    // Fonction pour récupérer la description et le nombre de votes d'une proposition par ID
+    function getProposal(uint256 _proposalId) external view returns (string memory description, uint256 voteCount) {
+        require(_proposalId < proposals.length, unicode"[Erreur] - ID de proposition invalide.");
+        description = proposals[_proposalId].description;
+        voteCount = proposals[_proposalId].voteCount;
+    }
+
+    // Fonction pour récupérer le classement des propositions par nombre de votes (dispo hors worflow à condition qu'un vote ait déjà eu lieu)
+    function getProposalsRanking() external view returns ( Proposal[] memory) {        
+        require( proposals.length > 0, unicode"[Erreur] - Aucune proposition n'a encore été votée.");
+        Proposal[] memory ranking = new Proposal[]( proposals.length);
+        
+        // On recopie le tableau des proposals dans un tableau ranking qui sera trié par la suite
+        for ( uint256 i=0; i<proposals.length; i++) 
+            ranking[ i] = proposals[ i];
+
+        // On trie le tableau ranking par ordre décroissant
+        for (uint256 i=0; i<ranking.length; i++) {
+            uint256 maxId = i;
+            for ( uint256 j = i + 1; j < ranking.length; j++) {
+                if ( ranking[ j].voteCount > ranking[ maxId].voteCount) {
+                    maxId = j;
+                }
+            }
+            // On alimente la liste finale
+            if (maxId != i) {
+                Proposal memory temp = ranking[ i];
+                ranking[ i] = ranking[ maxId];
+                ranking[ maxId] = temp;
+            }
+        }
+        return ranking;
+    }
 }
