@@ -117,7 +117,7 @@ contract Voting is Ownable {
     // Dépouiller les votes
     function countVotes() external onlyOwner onlyDuring ( WorkflowStatus.VotingSessionEnded)  {
         uint256 highestVoteCount = 0;
-        uint256[] memory tiedProposals; // Tableau pour stocker les propositions à égalité
+        uint256[] memory tiedProposals = new uint256[]( proposals.length); // Tableau pour stocker les propositions à égalité
         uint256 tiedProposalsCount = 0; // Compteur pour suivre le nombre de propositions à égalité
 
         for ( uint256 i = 0; i < proposals.length; i++) {
@@ -126,7 +126,6 @@ contract Voting is Ownable {
                 winningProposalId = i;
                 
                 // Réinitialiser le tableau en cas de nouvelle valeur de votes plus élevée
-                delete tiedProposals;
                 tiedProposalsCount = 0;
                 tiedProposals[ tiedProposalsCount] = i;
                 tiedProposalsCount++;
@@ -168,18 +167,10 @@ contract Voting is Ownable {
     // Fonction pour récupérer le vote des autres utilisateurs
     // Le vote n'est pas secret pour les utilisateurs ajoutés à la Whitelist
     // Chaque électeur peut voir les votes des autres
-    function getPublicVotes() external view onlyWhitelisted returns ( address[] memory, uint256[] memory) {
-        address[] memory votersAddresses = new address[]( proposals.length);
-        uint256[] memory votes = new uint256[]( proposals.length);
-        uint256 counter = 0;
-
-        for (uint256 i = 0; i < proposals.length; i++) {
-            if ( publicVotes[ votersAddresses[i]] != 0) {
-                votersAddresses[ counter] = votersAddresses[ i];
-                votes[ counter] = publicVotes[ votersAddresses[ i]];
-                counter++;
-            }
-        }
-        return ( votersAddresses, votes);
+    function getPublicVoteByAddress(address _voter) external view onlyWhitelisted returns (uint256) {
+        require( voters[_voter].isRegistered, unicode"[Erreur] - Cette adresse ne fait pas partie des votants.");
+        require( voters[_voter].hasVoted, unicode"[Erreur] - Cette adresse n'a pas voté.");
+        return voters[_voter].votedProposalId;
     }
+
 }
