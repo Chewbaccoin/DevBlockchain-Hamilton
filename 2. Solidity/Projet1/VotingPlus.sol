@@ -47,124 +47,124 @@ contract Voting is Ownable {
 
 
     // Définition du constructor, réponse à l'exigence "l'admin est celui qui déploie le contrat" => Owned by msg.sendor
-    constructor() Ownable( msg.sender) {
+    constructor() Ownable(msg.sender) {
             // Le contrat s'auto-initialise à la première valeur de l'enum WorkflowStatus : RegisteringVoters
     }
 
     // Définition des modifiers utiles aux différents test conditionnels du contrat
     modifier onlyWhitelisted() {
-        require( voters[ msg.sender].isRegistered, unicode"[Erreur] - Vous ne faites pas partie des personnes inscrites sur la whitelist.");
+        require(voters[msg.sender].isRegistered, unicode"[Erreur] - Vous ne faites pas partie des personnes inscrites sur la whitelist.");
         _;
     }
     
     modifier onlyDuring(WorkflowStatus _status) {
-        require( workflowStatus == _status, unicode"[Erreur] - Le workflow de la procédure de vote n'est pas respecté.");
+        require(workflowStatus == _status, unicode"[Erreur] - Le workflow de la procédure de vote n'est pas respecté.");
         _;
     }
 
     // Fonction d'ajout de votants à la whitelist par l'Admin
-    function addWhitelistedVoter( address _voter) external onlyOwner {
-        require( !voters[ _voter].isRegistered, unicode"[Erreur] - L'utilisateur est déjà whitelisté.");
-        voters[ _voter] = Voter( true, false, 0);
-        emit VoterRegistered( _voter);
+    function addWhitelistedVoter(address _voter) external onlyOwner {
+        require(!voters[_voter].isRegistered, unicode"[Erreur] - L'utilisateur est déjà whitelisté.");
+        voters[_voter] = Voter(true, false, 0);
+        emit VoterRegistered(_voter);
     }
 
     // On ouvre la phase d'enregistrement des propositions
-    function startProposalsRegistration() external onlyOwner onlyDuring ( WorkflowStatus.RegisteringVoters) {
+    function startProposalsRegistration() external onlyOwner onlyDuring (WorkflowStatus.RegisteringVoters) {
         workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
-        emit WorkflowStatusChange( WorkflowStatus.RegisteringVoters, WorkflowStatus.ProposalsRegistrationStarted);
+        emit WorkflowStatusChange(WorkflowStatus.RegisteringVoters, WorkflowStatus.ProposalsRegistrationStarted);
     }
     
     // Enregistrement d'une nouvelle proposition et intialisation de celle-ci à 0 (réservée aux électeurs whitelistés)
-    function registerProposals( string calldata _description) external onlyWhitelisted onlyDuring ( WorkflowStatus.ProposalsRegistrationStarted) {
-        proposals.push( Proposal( { description: _description, voteCount: 0 }));
-        emit ProposalRegistered( proposals.length - 1);
+    function registerProposals(string calldata _description) external onlyWhitelisted onlyDuring (WorkflowStatus.ProposalsRegistrationStarted) {
+        proposals.push(Proposal({ description: _description, voteCount: 0 }));
+        emit ProposalRegistered(proposals.length - 1);
     }
 
     // Cloturer la phase d'enregistrement des nouvelles propositions
-    function endProposalsRegistration() external onlyOwner onlyDuring ( WorkflowStatus.ProposalsRegistrationStarted) {
+    function endProposalsRegistration() external onlyOwner onlyDuring (WorkflowStatus.ProposalsRegistrationStarted) {
         workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
-        emit WorkflowStatusChange( WorkflowStatus.ProposalsRegistrationStarted, WorkflowStatus.ProposalsRegistrationEnded);
+        emit WorkflowStatusChange(WorkflowStatus.ProposalsRegistrationStarted, WorkflowStatus.ProposalsRegistrationEnded);
     }
 
     // Ouvrir la phase de vote
-    function startVoting() external onlyOwner onlyDuring( WorkflowStatus.ProposalsRegistrationEnded) {
+    function startVoting() external onlyOwner onlyDuring(WorkflowStatus.ProposalsRegistrationEnded) {
         workflowStatus = WorkflowStatus.VotingSessionStarted;
-        emit WorkflowStatusChange( WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotingSessionStarted);
+        emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotingSessionStarted);
     }
 
     // Enregistrement du vote d'un participant whitelisté
-    function registerVote( uint256 _proposalId) external onlyWhitelisted onlyDuring ( WorkflowStatus.VotingSessionStarted) {
-        require( !voters[ msg.sender].hasVoted, unicode"[Erreur] - Votre vote a déjà été comptabilisé, merci de ne pas bourrer les urnes !");
+    function registerVote(uint256 _proposalId) external onlyWhitelisted onlyDuring (WorkflowStatus.VotingSessionStarted) {
+        require(!voters[msg.sender].hasVoted, unicode"[Erreur] - Votre vote a déjà été comptabilisé, merci de ne pas bourrer les urnes !");
         // Mettre à jour le votant
-        voters[ msg.sender].hasVoted = true;
-        voters[ msg.sender].votedProposalId = _proposalId;
+        voters[msg.sender].hasVoted = true;
+        voters[msg.sender].votedProposalId = _proposalId;
 
         // Ajouter un vote à la proposition choisie
         proposals[_proposalId].voteCount += 1;
 
          // Enregistrer le vote dans le mapping public
-        publicVotes[ msg.sender] = _proposalId;
-        emit Voted( msg.sender, _proposalId);
+        publicVotes[msg.sender] = _proposalId;
+        emit Voted(msg.sender, _proposalId);
     }
 
     // Cloturer la phase de vote
-    function endVoting() external onlyOwner onlyDuring ( WorkflowStatus.VotingSessionStarted) {
+    function endVoting() external onlyOwner onlyDuring (WorkflowStatus.VotingSessionStarted) {
         workflowStatus = WorkflowStatus.VotingSessionEnded;
-        emit WorkflowStatusChange( WorkflowStatus.VotingSessionStarted, WorkflowStatus.VotingSessionEnded);
+        emit WorkflowStatusChange(WorkflowStatus.VotingSessionStarted, WorkflowStatus.VotingSessionEnded);
     }
 
     // Dépouiller les votes
-    function countVotes() external onlyOwner onlyDuring ( WorkflowStatus.VotingSessionEnded)  {
+    function countVotes() external onlyOwner onlyDuring (WorkflowStatus.VotingSessionEnded)  {
         uint256 highestVoteCount = 0;
-        uint256[] memory tiedProposals = new uint256[]( proposals.length); // Tableau pour stocker les propositions à égalité
+        uint256[] memory tiedProposals = new uint256[](proposals.length); // Tableau pour stocker les propositions à égalité
         uint256 tiedProposalsCount = 0; // Compteur pour suivre le nombre de propositions à égalité
 
-        for ( uint256 i = 0; i < proposals.length; i++) {
-            if ( proposals[i].voteCount > highestVoteCount) {
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i].voteCount > highestVoteCount) {
                 highestVoteCount = proposals[i].voteCount;
                 winningProposalId = i;
                 
                 // Réinitialiser le tableau en cas de nouvelle valeur de votes plus élevée
                 tiedProposalsCount = 0;
-                tiedProposals[ tiedProposalsCount] = i;
+                tiedProposals[tiedProposalsCount] = i;
                 tiedProposalsCount++;
-            } else if ( proposals[i].voteCount == highestVoteCount) {
-                tiedProposals[ tiedProposalsCount] = i;
+            } else if (proposals[i].voteCount == highestVoteCount) {
+                tiedProposals[tiedProposalsCount] = i;
                 tiedProposalsCount++;
             }
         }
 
         // Gérer le cas où plusieurs propositions sont à égalité
-        if ( tiedProposalsCount > 1) {
+        if (tiedProposalsCount > 1) {
             // Par défaut, sélection de la première proposition atteignant ce nombre de votes.
             // Règle définie pour répondre au besoin de trancher par le développeur i.e : le gagnant et la première proposition à atteindre le meilleur score
             // modifiable si la communauté souhaite une autre méthode de désignation de gagnant.
             winningProposalId = tiedProposals[0];
         }
         workflowStatus = WorkflowStatus.VotesTallied;
-        emit WorkflowStatusChange( WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
+        emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
     }
 
     // Récupérer la proposition gagnante
-    function getElected() external view onlyDuring( WorkflowStatus.VotesTallied) returns (string memory winnerDescription, uint256 winnerVoteCount) {
-        winnerDescription = proposals[ winningProposalId].description;
-        winnerVoteCount = proposals[ winningProposalId].voteCount;
+    function getElected() external view onlyDuring(WorkflowStatus.VotesTallied) returns (string memory winnerDescription, uint256 winnerVoteCount) {
+        winnerDescription = proposals[winningProposalId].description;
+        winnerVoteCount = proposals[winningProposalId].voteCount;
     }
 
     // Fonction pour récupérer le vote des autres utilisateurs
     // Le vote n'est pas secret pour les utilisateurs ajoutés à la Whitelist
     // Chaque électeur peut voir les votes des autres
     function getPublicVoteByAddress(address _voter) external view onlyWhitelisted returns (uint256) {
-        require( voters[_voter].isRegistered, unicode"[Erreur] - Cette adresse ne fait pas partie des votants.");
-        require( voters[_voter].hasVoted, unicode"[Erreur] - Cette adresse n'a pas voté.");
+        require(voters[_voter].isRegistered, unicode"[Erreur] - Cette adresse ne fait pas partie des votants.");
+        require(voters[_voter].hasVoted, unicode"[Erreur] - Cette adresse n'a pas voté.");
         return voters[_voter].votedProposalId;
     }
 
 
     // BONUS : Ajouts VotingPlus.sol
     // Fonction pour récupérer le nombre total de propositions
-    function getProposalsCount() external view returns ( uint256) {
+    function getProposalsCount() external view returns (uint256) {
         return proposals.length;
     }
 
@@ -176,27 +176,27 @@ contract Voting is Ownable {
     }
 
     // Fonction pour récupérer le classement des propositions par nombre de votes (dispo hors worflow à condition qu'un vote ait déjà eu lieu)
-    function getProposalsRanking() external view returns ( Proposal[] memory) {        
-        require( proposals.length > 0, unicode"[Erreur] - Aucune proposition n'a encore été votée.");
-        Proposal[] memory ranking = new Proposal[]( proposals.length);
+    function getProposalsRanking() external view returns (Proposal[] memory) {        
+        require(proposals.length > 0, unicode"[Erreur] - Aucune proposition n'a encore été votée.");
+        Proposal[] memory ranking = new Proposal[](proposals.length);
         
         // On recopie le tableau des proposals dans un tableau ranking qui sera trié par la suite
-        for ( uint256 i=0; i<proposals.length; i++) 
-            ranking[ i] = proposals[ i];
+        for (uint256 i=0; i<proposals.length; i++) 
+            ranking[i] = proposals[i];
 
         // On trie le tableau ranking par ordre décroissant
         for (uint256 i=0; i<ranking.length; i++) {
             uint256 maxId = i;
-            for ( uint256 j = i + 1; j < ranking.length; j++) {
-                if ( ranking[ j].voteCount > ranking[ maxId].voteCount) {
+            for (uint256 j = i + 1; j < ranking.length; j++) {
+                if (ranking[j].voteCount > ranking[maxId].voteCount) {
                     maxId = j;
                 }
             }
             // On alimente la liste finale
             if (maxId != i) {
-                Proposal memory temp = ranking[ i];
-                ranking[ i] = ranking[ maxId];
-                ranking[ maxId] = temp;
+                Proposal memory temp = ranking[i];
+                ranking[i] = ranking[maxId];
+                ranking[maxId] = temp;
             }
         }
         return ranking;
