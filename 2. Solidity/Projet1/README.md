@@ -21,7 +21,7 @@ https://holesky.etherscan.io/address/0xEb3Ff43d9312f2938a84aE36b62D8189A68dd4e1#
 
 #### Second smart contract : 
 
-Ajout de fonctionnalités optionnelles :  
+Ajout de fonctionnalités optionnelles (ajoutée à partir de la ligne 165) :  
 Des méthodes ont été ajoutées pour faciliter la construction d'une interface utilisateur (UI) de site web, avec des fonctionnalités permettant de détailler le processus de vote en cours.
 
 * `getProposalsCount()` : Renvoie le nombre total de propositions ouvertes au vote.
