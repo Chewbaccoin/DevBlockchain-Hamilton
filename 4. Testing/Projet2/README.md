@@ -1,8 +1,7 @@
 # Alyra - Développeur Blockchain - Promotion Hamilton
 ## Projet 1
 
-![Logo]([https://teachizy-prod.s3.fr-par.scw.cloud/eb9f009ea2ab9914fc5333e5130cd4ae/59b514174bffe4ae402b3d63aad79fe0/7548f80f88cc49c84bc1c89c502e9ced.jpg)
-
+![Logo](https://teachizy-prod.s3.fr-par.scw.cloud/eb9f009ea2ab9914fc5333e5130cd4ae/59b514174bffe4ae402b3d63aad79fe0/f43a38a462e4a82638899a8497ce9c4c.jpg)
 
 # Tests du Smart Contract de Vote
 
